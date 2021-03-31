@@ -19,13 +19,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.yandexmobileapplication.ForTinyDB.TinyDBMethods;
+import com.example.yandexmobileapplication.ForTinyDB.ResponseStockDTOWrapper;
 import com.example.yandexmobileapplication.Response.BestMatchingList;
 import com.example.yandexmobileapplication.Response.Result;
 import com.example.yandexmobileapplication.Response.StockPrice;
-import com.example.yandexmobileapplication.TinyDB.TinyDB;
 import com.example.yandexmobileapplication.extensions.Extensions;
 
+import TinyDB.TinyDB;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -75,8 +75,7 @@ public class MainActivity<object> extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         RecyclerView recyclerView = findViewById(R.id.rv_stocks);
 
-        TinyDBMethods toResolveTinyDBMethods = new TinyDBMethods();
-        toResolveTinyDBMethods.loadStartStockListLocal(context);
+        loadStartStockListLocal();
 
         ApiDataLists apiDataList = new ApiDataLists();
 
@@ -237,7 +236,6 @@ public class MainActivity<object> extends AppCompatActivity {
     }
 
     private void addedToFavourites(StockDTO stock) {
-        TinyDBMethods toResolveTinyDBMethods = new TinyDBMethods();
         favouriteDTOs.add(stock);
         for(int i = 0; i < responseStockDTO.size(); i++) {
             if(responseStockDTO.get(i).companyCode.equals(stock.companyCode)) {
@@ -250,11 +248,10 @@ public class MainActivity<object> extends AppCompatActivity {
                 stockDTO.get(i).favouriteStatus = ApplicationStatus.IS_IN_FAVOURITE;
             }
         }
-        toResolveTinyDBMethods.saveStartStockListLocal(context);
+        saveStartSockListLocal();
     }
 
     private void removedFromFavourites(StockDTO stock) {
-        TinyDBMethods toResolveTinyDBMethods = new TinyDBMethods();
         for(int i = 0; i < responseStockDTO.size(); i++) {
             if(responseStockDTO.get(i).companyCode.equals(stock.companyCode)){
                 responseStockDTO.get(i).favouriteStatus = ApplicationStatus.IS_NOT_IN_FAVOURITE;
@@ -278,7 +275,7 @@ public class MainActivity<object> extends AppCompatActivity {
                 stockDTOsSearching.get(i).favouriteStatus = ApplicationStatus.IS_NOT_IN_FAVOURITE;
             }
         }
-        toResolveTinyDBMethods.saveStartStockListLocal(context);
+        saveStartSockListLocal();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -453,5 +450,16 @@ public class MainActivity<object> extends AppCompatActivity {
             return String.format(Locale.US, "+%.2f", response.body().c - response.body().pc) + "(" +
                     String.format(Locale.US, "+%.2f", 100 * (response.body().c - response.body().pc) / response.body().c) + "%)";
         }
-    } 
+    }
+
+    private void loadStartStockListLocal() {
+        TinyDB tinyDB = new TinyDB(context);
+        tinyDB.putObject(ApiDataLists.key, ApiDataListsWrapper.class);
+    }
+    private void saveStartSockListLocal() {
+        ApiDataLists apiDataLists = new ApiDataLists();
+        responseStockDTO = apiDataLists.defaultList;
+        TinyDB tinyDB = new TinyDB(context);
+        tinyDB.putObject(ApiDataLists.key, new ResponseStockDTOWrapper(responseStockDTO));
+    }
 }
