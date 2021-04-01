@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <RelativeLayout
+        android:id="@+id/search_rectangle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/spacing_normal_16"
+        android:layout_marginTop="@dimen/spacing_small_8"
+        android:layout_marginRight="@dimen/spacing_normal_16"
+        android:layout_marginBottom="@dimen/spacing_normal_16"
+        android:background="@drawable/search_rectangle"
+        android:ellipsize="start"
+        android:gravity="center">
+        <EditText
+            android:id="@+id/input_search"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/spacing_very_huge_48"
+            android:hint="Find company or ticker"
+            android:paddingStart="@dimen/spacing_very_huge_48"
+            android:paddingLeft="@dimen/spacing_very_huge_48"
+            android:gravity="center_vertical"
+            android:inputType="text"
+            android:background="@android:color/transparent"
+            />
+
+        <ImageButton
+            android:id="@+id/btn_search"
+            android:layout_width="@dimen/Spacing_for_btn_40"
+            android:layout_height="@dimen/Spacing_for_btn_40"
+            android:layout_marginLeft="@dimen/spacing_small_8"
+            android:background="@drawable/ic_search_24"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="@dimen/spacing_small_8" />
+        <ImageButton
+            android:id="@+id/btn_clear"
+            android:layout_width="@dimen/Spacing_for_btn_40"
+            android:layout_height="@dimen/Spacing_for_btn_40"
+            tools:ignore="NotSibling"
+            android:background="@drawable/ic_baseline_clear_24"
+            android:visibility="invisible"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_toLeftOf="@id/btn_search"
+            android:layout_toStartOf="@id/btn_search">
+
+        </ImageButton>
+    </RelativeLayout>
+    
+    <RelativeLayout
+        android:id="@+id/Layout_buttons"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/spacing_very_huge_48">
+        
+        <Button
+            android:id="@+id/btn_stocks"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/spacing_very_huge_48"
+            android:layout_marginLeft="@dimen/spacing_normal_16"
+            android:text="Stocks"
+            android:textSize="@dimen/front_large_24"
+            android:textStyle="bold"
+            android:textAllCaps="false"
+            >
+
+        </Button>
+
+        <Button
+            android:id="@+id/btn_favourite"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/spacing_very_huge_48"
+            android:text="Favourite"
+            android:textSize="@dimen/front_large_24"
+            android:textStyle="bold"
+            android:textAllCaps="false"
+            android:layout_toEndOf="@id/btn_stocks"
+            android:layout_toRightOf="@id/btn_stocks">
+
+        </Button>
+
+    </RelativeLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_stocks"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+</LinearLayout>

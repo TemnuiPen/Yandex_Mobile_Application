@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    android:id="@+id/rv_item"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/spacing_for_recycleView_96"
+    tools:ignore="NotSibling"
+    android:background="@drawable/round_rectangle">
+
+
+    <TextView
+        android:id="@+id/company_code"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="@dimen/spacing_small_8"
+        android:layout_marginTop="@dimen/spacing_small_8"
+        android:layout_alignParentLeft="true"
+        android:textColor="@color/black"
+        android:textSize="@dimen/front_large_24"
+        android:text="AAPL"
+        android:layout_marginLeft="@dimen/spacing_small_8">
+    </TextView>
+
+    <TextView
+        android:id="@+id/company_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/company_code"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="@dimen/spacing_small_8"
+        android:layout_marginTop="@dimen/spacing_tiny_4"
+        android:layout_alignParentLeft="true"
+        android:layout_marginLeft="@dimen/spacing_small_8"
+        android:text="Apple inc."
+        android:textColor="@android:color/black" >
+    </TextView>
+
+    <ImageButton
+        android:id="@+id/button_star"
+        android:layout_width="@dimen/spacing_huge_32"
+        android:layout_height="@dimen/spacing_huge_32"
+        android:layout_toEndOf="@id/company_code"
+        android:layout_marginTop="@dimen/spacing_small_8"
+        android:layout_marginStart="@dimen/spacing_small_8"
+        android:background="@drawable/ic_baseline_star_24_yellow"
+        android:layout_toRightOf="@id/company_code"
+        android:layout_marginLeft="@dimen/spacing_small_8">
+
+    </ImageButton>
+
+
+    <TextView
+        android:id="@+id/price"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="@dimen/spacing_small_8"
+        android:layout_marginEnd="@dimen/spacing_small_8"
+        android:text="$56456,24"
+        android:textColor="@android:color/black"
+        android:textSize="@dimen/front_large_24"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="@dimen/spacing_small_8">
+    </TextView>
+
+    <TextView
+        android:id="@+id/price_change"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/price"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="@dimen/spacing_tiny_4"
+        android:layout_marginEnd="@dimen/spacing_small_8"
+        android:text="+$253,54(0,15%)"
+        android:textColor="@color/green"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="@dimen/spacing_small_8">
+
+    </TextView>
+
+</RelativeLayout>
+
