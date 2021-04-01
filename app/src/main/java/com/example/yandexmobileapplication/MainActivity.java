@@ -73,7 +73,7 @@ public class MainActivity<object> extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        RecyclerView recyclerView = findViewById(R.id.rv_stocks);
+        stocksRecycler = findViewById(R.id.rv_stocks);
 
         loadStartStockListLocal();
 
@@ -85,7 +85,6 @@ public class MainActivity<object> extends AppCompatActivity {
         clear = findViewById(R.id.btn_clear);
         stocks = findViewById(R.id.btn_stocks);
         favourite = findViewById(R.id.btn_favourite);
-        stocksRecycler = findViewById(R.id.rv_stocks);
 
         search.addTextChangedListener(new TextWatcher() {
 
@@ -440,6 +439,7 @@ public class MainActivity<object> extends AppCompatActivity {
                 });
     }
     private String getPriceChange(Response<StockPrice> response) {
+        assert response.body() != null;
         if (Double.parseDouble(String.format(Locale.US, "+%.2f", response.body().c - response.body().pc)) > 0) {
             return String.format(Locale.US, "+%.2f", response.body().c - response.body().pc) + "(" +
                     String.format(Locale.US, "+%.2f", 100 * (response.body().c - response.body().pc) / response.body().c) + "%)";
@@ -454,7 +454,17 @@ public class MainActivity<object> extends AppCompatActivity {
 
     private void loadStartStockListLocal() {
         TinyDB tinyDB = new TinyDB(context);
-        tinyDB.putObject(ApiDataLists.key, ApiDataListsWrapper.class);
+        ResponseStockDTOWrapper loaded = tinyDB.getObject(ApiDataLists.key, ResponseStockDTOWrapper.class);
+
+        if (loaded == null) {
+            ApiDataLists apiDataLists = new ApiDataLists();
+            responseStockDTO = apiDataLists.defaultList;
+        }
+        else {
+            responseStockDTO = loaded.getResponseStockDTO();
+        }
+
+
     }
     private void saveStartSockListLocal() {
         ApiDataLists apiDataLists = new ApiDataLists();

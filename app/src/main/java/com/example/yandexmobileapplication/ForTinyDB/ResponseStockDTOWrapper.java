@@ -10,4 +10,8 @@ public class ResponseStockDTOWrapper {
     public  ResponseStockDTOWrapper(LinkedList<ApiDataLists> responseStockDTO) {
         this.responseStockDTO = responseStockDTO;
     }
+
+    public LinkedList<ApiDataLists> getResponseStockDTO() {
+        return responseStockDTO;
+    }
 }
