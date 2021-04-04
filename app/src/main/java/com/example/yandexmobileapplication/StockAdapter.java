@@ -41,8 +41,10 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockHolder>
 
         holder.companyName.setText(stockDTO.companyName);
         holder.companyCode.setText(stockDTO.companyCode);
+
         holder.companyStock.setText((CharSequence) stockDTO.stockPrice);
         holder.stockChange.setText((CharSequence) stockDTO.priceChange);
+
 
         if (((CharSequence) stockDTO.stockPrice).charAt(0) == '-') {
             holder.stockChange.getResources().getColor(R.color.red);

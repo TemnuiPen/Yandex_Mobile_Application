@@ -1,7 +1,11 @@
 package com.example.yandexmobileapplication;
 
 import com.example.yandexmobileapplication.Response.BestMatchingList;
+import com.example.yandexmobileapplication.Response.Result;
 import com.example.yandexmobileapplication.Response.StockPrice;
+
+import java.util.LinkedList;
+import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.http.GET;

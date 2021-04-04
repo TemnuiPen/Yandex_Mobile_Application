@@ -109,7 +109,7 @@ public class MainActivity<object> extends AppCompatActivity {
         search.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if(actionId == EditorInfo.IME_ACTION_DONE) {
+                if(actionId == EditorInfo.IME_ACTION_NEXT) {
                     String searchString = search.getText().toString().toLowerCase(Locale.getDefault());
                     if(!searchString.equals("")) {
                         if(favouriteStatus.equals(ApplicationStatus.IS_NOT_IN_FAVOURITE)) {
@@ -257,18 +257,23 @@ public class MainActivity<object> extends AppCompatActivity {
         for(int i = 0; i < favouriteDTOs.size(); i++) {
             if(favouriteDTOs.get(i).companyCode.equals(stock.companyCode)) {
                 favouriteDTOs.get(i).favouriteStatus = ApplicationStatus.IS_NOT_IN_FAVOURITE;
+                favouriteDTOs.remove(i);
+                break;
             }
         }
 
         for(int i = 0; i < stockDTO.size(); i++) {
             if (stockDTO.get(i).companyCode.equals(stock.companyCode)) {
-                stockDTO.get(i).favouriteStatus = ApplicationStatus.IS_NOT_IN_FAVOURITE;
+                stock = stockDTO.get(i);
+                stock.favouriteStatus = ApplicationStatus.IS_NOT_IN_FAVOURITE;
+                break;
             }
         }
 
         for(int i = 0; i < stockDTOsSearching.size(); i++) {
             if(stockDTOsSearching.get(i).companyCode.equals(stock.companyCode)) {
                 stockDTOsSearching.get(i).favouriteStatus = ApplicationStatus.IS_NOT_IN_FAVOURITE;
+                stock = stockDTOsSearching.get(i);
             }
         }
         saveStartSockListLocal();
@@ -317,13 +322,14 @@ public class MainActivity<object> extends AppCompatActivity {
 
 
     private void getBestMatchingTickerFromApi(String searchString) {
-        Call <BestMatchingList> call = apiService.getBestMatching("https://finnhub.io/api/v1/search?q=" + searchString + "&token=c1c4o0v48v6sp0s59kj0");
-        call.enqueue(new Callback<BestMatchingList>() {
+        apiService.getBestMatching("https://finnhub.io/api/v1/search?q=" + searchString + "&token=c1c4o0v48v6sp0s59kj0")
+                .enqueue(new Callback<BestMatchingList>() {
 
             @Override
             public void onResponse
                     (@NotNull Call<BestMatchingList> call,
                      @NotNull Response<BestMatchingList> response) {
+                BestMatchingList responseResult = response.body();
                 if(!search.getText().toString().equals("")) {
                     if (response.errorBody() != null) {
                         Toast.makeText(context,"Failed connect to server,\n please try again later", Toast.LENGTH_SHORT).show();
@@ -336,16 +342,16 @@ public class MainActivity<object> extends AppCompatActivity {
                                 responseStockDTOsSearching.add(currentList);
                             }
                         }
-                        if(response.body() != null) {
+                        if(responseResult != null) {
                             Extensions isContains = new Extensions();
-                            LinkedList<Result> responseList = response.body().responsedStockDTO;
-                            int currentLoadedStocks = response.body().count;
+                            LinkedList<Result> responseList = responseResult.result;
+                            int currentLoadedStocks = responseResult.count;
 
                             for (int i = 0; i < currentLoadedStocks; i++) {
-                                ApiDataLists currentList = new ApiDataLists(responseList.get(i).companyTicker,
-                                        responseList.get(i).companyName, ApplicationStatus.IS_NOT_IN_FAVOURITE);
+                                ApiDataLists currentList = new ApiDataLists(responseList.get(i).description,
+                                        responseList.get(i).displaySymbol, ApplicationStatus.IS_NOT_IN_FAVOURITE);
 
-                                if (isContains.isContainsApiDataList(currentList, responseStockDTOsSearching)) {
+                                if (!isContains.isContainsApiDataList(currentList, responseStockDTOsSearching)) {
                                     responseStockDTOsSearching.add(currentList);
                                 }
                             }
@@ -367,7 +373,7 @@ public class MainActivity<object> extends AppCompatActivity {
             StockAdapter adapter,
             LinkedList<StockDTO> stockDTOList // StockDTO
             ) {
-        LinkedList<ApiDataLists> sendRequestList = new LinkedList<>();
+        ApiDataLists sendRequestList;
         final int currentLoadedStocks = stockDTOList.size();
 
         if(currentLoadedStocks == 0) {
@@ -380,75 +386,69 @@ public class MainActivity<object> extends AppCompatActivity {
             }
 
             if(i < defaultList.size()) {
-                sendRequestList.add(defaultList.get(i));
+                sendRequestList = defaultList.get(i);
                 requestNumber++;
                 getPrice(sendRequestList, adapter, stockDTOList);
             }
         }
 
     }
-    private void getPrice(LinkedList<ApiDataLists> sendRequestList, StockAdapter adapter,LinkedList<StockDTO> stockDTOList) {
-        final int listSize = sendRequestList.size();
-        while (stockDTO.size() != listSize) {
-            int count = 0;
-            Call<StockPrice> call = apiService.getPrice("https://finnhub.io/api/v1/quote?symbol=" + sendRequestList.get(count).companyCode + "&token=c1c4o0v48v6sp0s59kj0");
-            ApiDataLists currentTicker = sendRequestList.get(count);
-            call.enqueue(new Callback<StockPrice>() {
-                             @Override
-                             public void onResponse(
-                                     @NotNull Call<StockPrice> call,
-                                     @NotNull Response<StockPrice> response) {
-                                 if(requestNumber > 0) {
-                                     requestNumber--;
-                                     if(response.errorBody() != null) {
-                                         if (response.code() == 429) {
-                                             requestNumber = 0;
-                                             Toast.makeText(context,"Failed to connect to server\n Please, try again later",Toast.LENGTH_SHORT).show();
-                                         }
-                                     }
-                                     if(response.body() != null) {
-                                         String priceChange = getPriceChange(response);
+    private void getPrice(ApiDataLists sendRequestList, StockAdapter adapter,LinkedList<StockDTO> stockDTOList) {
+                apiService.getPrice("https://finnhub.io/api/v1/quote?symbol=" + sendRequestList.companyCode + "&token=c1c4o0v48v6sp0s59kj0")
+                        .enqueue(new Callback<StockPrice>() {
+                    @Override
+                    public void onResponse(
+                            @NotNull Call<StockPrice> call,
+                            @NotNull Response<StockPrice> response) {
+                        StockPrice responseResult = response.body();
+                        if(requestNumber > 0) {
+                            requestNumber--;
+                            if(response.errorBody() != null) {
+                                if (response.code() == 429) {
+                                    requestNumber = 0;
+                                    Toast.makeText(context,"Failed to connect to server\n Please, try again later",Toast.LENGTH_LONG).show();
+                                }
+                            }
+                            if(responseResult != null) {
+                                String priceChange = getPriceChange(response);
 
-                                         StockDTO loadedStock = new StockDTO(
-                                                 currentTicker.companyCode,
-                                                 currentTicker.companyName,
-                                                 String.format(Locale.US, "$%.2f",response.body().c),
-                                                 priceChange,
-                                                 currentTicker.favouriteStatus
-                                         );
-                                         Extensions extensions = new Extensions();
-                                         if(!extensions.isContainsStockDTO(loadedStock, stockDTOList)) {
-                                             stockDTO.add(loadedStock);
-                                         }
-                                         if(!extensions.isContainsApiDataList(currentTicker, responseStockDTO)) {
-                                             responseStockDTO.add(currentTicker);
-                                         }
-                                         adapter.notifyDataSetChanged();
-                                     }
-                                 }
-                                 if(requestNumber != 0) {
-                                     requestNumber = 0;
-                                 }
-                             }
-                @Override
-                public void onFailure(@NotNull Call call, @NotNull Throwable t) {
-                    Toast.makeText(context,"Failed to connect to server\n Please, try again later", Toast.LENGTH_SHORT).show();
-                }
-            });
-            count++;
-        }
+                                StockDTO loadedStock = new StockDTO(
+                                        sendRequestList.companyCode,
+                                        sendRequestList.companyName,
+                                        String.format(Locale.US, "$%.2f",response.body().c),
+                                        priceChange,
+                                        sendRequestList.favouriteStatus
+                                );
+                                Extensions extensions = new Extensions();
+                                if(!extensions.isContainsStockDTO(loadedStock, stockDTOList)) {
+                                    stockDTOList.add(loadedStock);
+                                }
+                                if(!extensions.isContainsApiDataList(sendRequestList, responseStockDTO)) {
+                                    responseStockDTO.add(sendRequestList);
+                                }
+                                adapter.notifyDataSetChanged();
+                            }
+                        }
+                    }
+                    @Override
+                    public void onFailure(@NotNull Call call, @NotNull Throwable t) {
+                        Toast.makeText(context,"Failed to connect to server\n Please, try again later", Toast.LENGTH_LONG).show();
+                    }
+                });
     }
     private String getPriceChange(Response<StockPrice> response) {
         assert response.body() != null;
-        if (Double.parseDouble(String.format(Locale.US, "+%.2f", response.body().c - response.body().pc)) > 0) {
+        if (Double.parseDouble(String.format(Locale.US, "%.2f", response.body().c - response.body().pc)) > 0) {
             return String.format(Locale.US, "+%.2f", response.body().c - response.body().pc) + "(" +
                     String.format(Locale.US, "+%.2f", 100 * (response.body().c - response.body().pc) / response.body().c) + "%)";
-        } else if (Double.parseDouble(String.format(Locale.US, "+%.2f", response.body().c - response.body().pc)) < 0) {
-            return String.format(Locale.US, "+%.2f", response.body().c - response.body().pc) + "(" +
-                    String.format(Locale.US, "+%.2f", 100 * (response.body().c - response.body().pc) / response.body().c) + "%)";
-        } else {
-            return String.format(Locale.US, "+%.2f", response.body().c - response.body().pc) + "(" +
-                    String.format(Locale.US, "+%.2f", 100 * (response.body().c - response.body().pc) / response.body().c) + "%)";
+        }
+        else if (Double.parseDouble(String.format(Locale.US, "%.2f", response.body().c - response.body().pc)) < 0) {
+            return String.format(Locale.US, "%.2f", response.body().c - response.body().pc) + "(" +
+                    String.format(Locale.US, "%.2f", 100 * (response.body().c - response.body().pc) / response.body().c) + "%)";
+        }
+        else {
+            return String.format(Locale.US, "%.2f", response.body().c - response.body().pc) + "(" +
+                    String.format(Locale.US, "%.2f", 100 * (response.body().c - response.body().pc) / response.body().c) + "%)";
         }
     }
 
