@@ -14,10 +14,12 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.yandexmobileapplication.ForTinyDB.ResponseStockDTOWrapper;
 import com.example.yandexmobileapplication.Response.BestMatchingList;
@@ -56,6 +58,7 @@ public class MainActivity<object> extends AppCompatActivity {
     private Button stocks;
     private Button favourite;
     private RecyclerView stocksRecycler;
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     private LinkedList<StockDTO> stockDTO = new LinkedList<>();
     private LinkedList<StockDTO> stockDTOsSearching = new LinkedList<>();
@@ -66,6 +69,7 @@ public class MainActivity<object> extends AppCompatActivity {
 
     private ApplicationStatus favouriteStatus = ApplicationStatus.IS_NOT_IN_FAVOURITE;
     private ApplicationStatus searchingStatus = ApplicationStatus.IS_NOT_SEARCHING;
+    private ApplicationStatus loadingStatus = ApplicationStatus.IS_NOT_LOADING;
 
 
 
@@ -73,7 +77,8 @@ public class MainActivity<object> extends AppCompatActivity {
     @SuppressLint({"ResourceType", "CutPasteId"})
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.main_activity);
+        setSupportActionBar(findViewById(R.id.toolBar));
         stocksRecycler = findViewById(R.id.rv_stocks);
 
         loadStartStockListLocal();
@@ -82,6 +87,30 @@ public class MainActivity<object> extends AppCompatActivity {
         clear = findViewById(R.id.btn_clear);
         stocks = findViewById(R.id.btn_stocks);
         favourite = findViewById(R.id.btn_favourite);
+        swipeRefreshLayout = findViewById(R.id.swipe_refresh_layout);
+
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+
+            @Override public void onRefresh() {
+                LinkedList<ApiDataLists> forFavouriteDTO = new LinkedList<>();
+                if(searchingStatus.equals(ApplicationStatus.IS_SEARCHING)){
+                    getPriceForStocksFromApi(responseStockDTO,adapterSearch,stockDTOsSearching);
+                }
+                else if(favouriteStatus.equals(ApplicationStatus.IS_IN_FAVOURITE)) {
+                    for(int i = 0; i < responseStockDTO.size(); i++ ) {
+                        if(responseStockDTO.get(i).favouriteStatus.equals(ApplicationStatus.IS_IN_FAVOURITE)) {
+                            forFavouriteDTO.add(responseStockDTO.get(i));
+                        }
+                    }
+                    getPriceForStocksFromApi(forFavouriteDTO,adapterFavourites,favouriteDTOs);
+                }
+                else {
+                    getPriceForStocksFromApi(responseStockDTO,adapterStocks,stockDTO);
+                }
+
+                showProgressBar();
+            }
+        } );
 
         search.addTextChangedListener(new TextWatcher() {
 
@@ -109,7 +138,7 @@ public class MainActivity<object> extends AppCompatActivity {
         search.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if(actionId == EditorInfo.IME_ACTION_NEXT) {
+                if(actionId == EditorInfo.IME_ACTION_DONE) {
                     String searchString = search.getText().toString().toLowerCase(Locale.getDefault());
                     if(!searchString.equals("")) {
                         if(favouriteStatus.equals(ApplicationStatus.IS_NOT_IN_FAVOURITE)) {
@@ -174,6 +203,7 @@ public class MainActivity<object> extends AppCompatActivity {
                 searchingStatus = ApplicationStatus.IS_NOT_SEARCHING;
                 requestNumber = 0;
                 search.setText("");
+                hideProgressBar();
 
                 if(favouriteStatus.equals(ApplicationStatus.IS_NOT_IN_FAVOURITE)) {
                     stocksRecycler.swapAdapter(adapterStocks,true);
@@ -228,6 +258,38 @@ public class MainActivity<object> extends AppCompatActivity {
         stocksRecycler.setHasFixedSize(true);
         stocksRecycler.setLayoutManager(layoutManager);
         stocksRecycler.setAdapter(adapterStocks);
+
+        stocksRecycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                if(dy > 0) {
+                    int positionView = ((LinearLayoutManager)recyclerView.getLayoutManager()).findFirstVisibleItemPosition();
+                    int childCount = layoutManager.getChildCount();
+                    int itemCount = layoutManager.getItemCount();
+                    if(childCount + positionView >= itemCount && loadingStatus.equals(ApplicationStatus.IS_NOT_LOADING)) {
+                        if(searchingStatus.equals(ApplicationStatus.IS_SEARCHING)) {
+                            getPriceForStocksFromApi(responseStockDTO,adapterSearch,stockDTOsSearching);
+                        }
+                        else if(favouriteStatus.equals(ApplicationStatus.IS_IN_FAVOURITE)) {
+                            LinkedList<ApiDataLists> forFavouriteDTO = new LinkedList<>();
+                            int listSize = responseStockDTO.size();
+                            for (int i = 0; i < listSize; i++) {
+                                if(responseStockDTO.get(i).favouriteStatus.equals(ApplicationStatus.IS_IN_FAVOURITE)) {
+                                    forFavouriteDTO.add(responseStockDTO.get(i));
+                                }
+                            }
+                            getPriceForStocksFromApi(forFavouriteDTO,adapterFavourites,favouriteDTOs);
+                        }
+                        else {
+                            getPriceForStocksFromApi(responseStockDTO,adapterStocks,stockDTO);
+                        }
+
+                        showProgressBar();
+                    }
+                }
+            }
+        });
         showStocks();
     }
 
@@ -315,11 +377,35 @@ public class MainActivity<object> extends AppCompatActivity {
         stocksRecycler.swapAdapter(adapterFavourites, true);
     }
 
-    void getStockList() {
+    private void getStockList() {
         getPriceForStocksFromApi(responseStockDTO, adapterStocks,stockDTO);
     }
 
+    private void showProgressBar() {
+        loadingStatus = ApplicationStatus.IS_LOADING;
 
+        adapterStocks.showLoading();
+        adapterFavourites.showLoading();
+        adapterSearch.showLoading();
+    }
+
+    private void hideProgressBar() {
+        loadingStatus = ApplicationStatus.IS_NOT_LOADING;
+        boolean loadingBooleanStatus = false;
+
+        if(loadingStatus.equals(ApplicationStatus.IS_NOT_LOADING)) {
+            loadingBooleanStatus = false;
+        }
+        else if(loadingStatus.equals(ApplicationStatus.IS_LOADING)){
+            loadingBooleanStatus = true;
+        }
+
+        adapterStocks.hideLoading();
+        adapterFavourites.hideLoading();
+        adapterSearch.hideLoading();
+
+        swipeRefreshLayout.setRefreshing(loadingBooleanStatus);
+    }
 
     private void getBestMatchingTickerFromApi(String searchString) {
         apiService.getBestMatching("https://finnhub.io/api/v1/search?q=" + searchString + "&token=c1c4o0v48v6sp0s59kj0")
@@ -333,6 +419,9 @@ public class MainActivity<object> extends AppCompatActivity {
                 if(!search.getText().toString().equals("")) {
                     if (response.errorBody() != null) {
                         Toast.makeText(context,"Failed connect to server,\n please try again later", Toast.LENGTH_SHORT).show();
+                        if(response.code() == 429) {
+                            hideProgressBar();
+                        }
                     }
                     else {
                         for (int i = 0; i < responseStockDTO.size(); i++) {
@@ -365,6 +454,7 @@ public class MainActivity<object> extends AppCompatActivity {
             @Override
             public void onFailure(@NotNull Call<BestMatchingList> call, @NotNull Throwable t) {
                 Toast.makeText(context,"Failed to connect to server", Toast.LENGTH_SHORT ).show();
+                hideProgressBar();
             }
         });
     }
@@ -377,16 +467,19 @@ public class MainActivity<object> extends AppCompatActivity {
         final int currentLoadedStocks = stockDTOList.size();
 
         if(currentLoadedStocks == 0) {
+            hideProgressBar();
             stocksRecycler.swapAdapter(adapter,false);
         }
 
         for (int i = 0; i < currentLoadedStocks + stockPerPage; i++) {
             if(defaultList.size() == stockDTOList.size()) {
+                hideProgressBar();
                 break;
             }
 
             if(i < defaultList.size()) {
                 sendRequestList = defaultList.get(i);
+                showProgressBar();
                 requestNumber++;
                 getPrice(sendRequestList, adapter, stockDTOList);
             }
@@ -405,6 +498,7 @@ public class MainActivity<object> extends AppCompatActivity {
                             requestNumber--;
                             if(response.errorBody() != null) {
                                 if (response.code() == 429) {
+                                    hideProgressBar();
                                     requestNumber = 0;
                                     Toast.makeText(context,"Failed to connect to server\n Please, try again later",Toast.LENGTH_LONG).show();
                                 }
@@ -425,14 +519,23 @@ public class MainActivity<object> extends AppCompatActivity {
                                 }
                                 if(!extensions.isContainsApiDataList(sendRequestList, responseStockDTO)) {
                                     responseStockDTO.add(sendRequestList);
+
+
                                 }
                                 adapter.notifyDataSetChanged();
                             }
+                        }
+                        if(requestNumber < 0) {
+                            requestNumber = 0;
+                        }
+                        if(requestNumber == 0) {
+                            hideProgressBar();
                         }
                     }
                     @Override
                     public void onFailure(@NotNull Call call, @NotNull Throwable t) {
                         Toast.makeText(context,"Failed to connect to server\n Please, try again later", Toast.LENGTH_LONG).show();
+                        hideProgressBar();
                     }
                 });
     }

@@ -15,8 +15,14 @@ import java.util.LinkedList;
 
 public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockHolder> {
 
+    private final int VIEW_TYPE_LOADING = 1;
+    private final int VIEW_TYPE_NORMAL = 2;
+
     private final LinkedList<StockDTO> stockDTOs;
+
     public StockAdapterListener stockAdapterListener = null;
+
+    private boolean isShowingLoading = false;
 
 
     public StockAdapter (LinkedList<StockDTO> stockDTOs) {
@@ -26,10 +32,40 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockHolder>
     @NonNull
     @Override
     public StockAdapter.StockHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.rv_item,
-                parent,false);
-        return new StockHolder(view);
+        if(viewType == VIEW_TYPE_NORMAL) {
+            View stockView = LayoutInflater.from(parent.getContext()).inflate(R.layout.rv_item,
+                    parent,false);
+            return new StockHolder(stockView);
+        }
+        else if (viewType == VIEW_TYPE_LOADING) {
+            View loadingView = LayoutInflater.from(parent.getContext()).inflate(R.layout.loading,
+                    parent,false);
+            return new LoadingHolder(loadingView);
+        }
+        return new StockHolder(parent);
     }
+
+    @Override
+    public int getItemViewType(int position) {
+        int listSize = stockDTOs.size();
+        if(position < listSize) {
+            return VIEW_TYPE_NORMAL;
+        }
+        return VIEW_TYPE_LOADING;
+    }
+
+
+    void hideLoading() {
+        isShowingLoading = false;
+        int itemCount = getItemCount();
+        notifyItemRemoved(itemCount);
+    }
+    void showLoading() {
+        isShowingLoading = true;
+        int itemCount = getItemCount();
+        notifyItemInserted(itemCount + 1);
+    }
+
 
     @Override
     public void onBindViewHolder(@NonNull StockHolder holder, int position) {
@@ -91,7 +127,7 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockHolder>
     }
 
 
-    static class StockHolder extends RecyclerView.ViewHolder {
+     class StockHolder extends RecyclerView.ViewHolder {
 
         public StockHolder(@NonNull View itemView) {
             super(itemView);
@@ -105,5 +141,12 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockHolder>
         RelativeLayout layout = itemView.findViewById(R.id.rv_item);
         ImageButton favourite = itemView.findViewById(R.id.button_star);
 
+    }
+    class LoadingHolder extends StockHolder  {
+        public LoadingHolder(@NonNull View itemView) {
+            super(itemView);
+            itemView = loading;
+        }
+        View loading = itemView.findViewById(R.id.progressBar);
     }
 }
